@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 # Load banner image
-banner = Image.open("/Users/peterwang/Downloads/apple_731985.png")
+banner = Image.open("apple_logo.png")
 
 # Layout: Banner on the left, Title on the right
 col1, col2 = st.columns([1, 25])
