@@ -20,13 +20,35 @@ st.set_page_config(page_title="Cost Comparison Simulator", layout="wide")
 
 # Centered title and subtitle using HTML
 st.markdown("""
-    <div style='text-align: center; padding-top: 0.5rem;'>
-        <h1 style='font-size: 2.5rem;'>🏭 Cost Simulator: FATP vs CSD Mainline</h1>
-        <p style='font-size: 1.2rem;'>Compare 📱 production cost metrics between 
-        <strong>FATP(Excluding SMT)</strong> and <strong>CSD Mainline</strong>.</p>
+    <style>
+        .black-box {
+            background-color: black;
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+    </style>
+
+    <div class='black-box'>
+        <div style='text-align: center; padding-top: 0.5rem;'>
+            <h1 style='font-size: 2.5rem;'> Cost Simulator: FATP vs CSD Mainline</h1>
+            <p style='font-size: 1.2rem;'>
+                Compare 📱 production cost metrics between 
+                <strong>FATP (Excluding SMT)</strong> and <strong>CSD Mainline</strong>.
+            </p>
+        </div>
     </div>
 """, unsafe_allow_html=True)
-st.markdown("---")
+
+st.markdown("""
+    <style>
+        body {
+            background-color: #f0f0f0;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # Initialize session state
 if "results" not in st.session_state:
     st.session_state.results = {
@@ -34,39 +56,75 @@ if "results" not in st.session_state:
         "CSD": {"UPPH": None, "Cost": None},
     }
 
+# === Default Presets ===
+presets = {
+    "HHTY": {
+        "fatp": {"uph": 120.0, "dl": 10, "util_pct": 80, "wage": 4.0},
+        "csd": {"uph": 100.0, "dl": 12, "util_pct": 85, "wage": 4.0}
+    },
+    "LXKU": {
+        "fatp": {"uph": 110.0, "dl": 8, "util_pct": 90, "wage": 4.0},
+        "csd": {"uph": 95.0, "dl": 9, "util_pct": 88, "wage": 4.0}
+    }
+}
+
+# === User Selection ===
+selection = st.radio("Select Site", options=["HHTY", "LXKU"], horizontal=True)
+
+# Fetch values based on selection
+fatp_defaults = presets[selection]["fatp"]
+csd_defaults = presets[selection]["csd"]
+
+
+st.markdown("---")
+# === Layout ===
 col1, col2 = st.columns(2)
 
 with col1:
     st.header("FATP")
-    fatp_uph = st.number_input("UPH (FATP)", key="fatp_uph", min_value=0.0, step=1.0, format="%.2f")
-    fatp_dl = st.number_input("DL HC (FATP)", key="fatp_dl", min_value=0, step=1)
-    fatp_util_pct = st.number_input("Utilization (%) (FATP)", min_value=1, max_value=100, value=85, step=1, format="%d")  # User sees %
+
+    fatp_uph = st.number_input("UPH (FATP)", key="fatp_uph", min_value=0.0, step=1.0,
+                               value=fatp_defaults["uph"], format="%.2f")
+    fatp_dl = st.number_input("DL HC (FATP)", key="fatp_dl", min_value=0, step=1,
+                              value=fatp_defaults["dl"])
+    fatp_util_pct = st.number_input("Utilization (%) (FATP)", min_value=1, max_value=100,
+                                    value=fatp_defaults["util_pct"], step=1, format="%d")
     fatp_util = fatp_util_pct / 100.0
     st.session_state.fatp_util = fatp_util
-    fatp_wage = st.number_input("Hourly Wage ($) (FATP)", key="fatp_wage", min_value=0.0, step=1.0, format="%.2f")
+
+    fatp_wage = st.number_input("Hourly Wage ($) (FATP)", key="fatp_wage", min_value=0.0, step=1.0,
+                                value=fatp_defaults["wage"], format="%.2f")
+
     if st.button("Calculate FATP"):
         upph = fatp_uph / fatp_dl if fatp_dl > 0 else 0
         cost = fatp_wage / fatp_util / upph if upph > 0 else 0
-
         st.session_state.results["FATP"]["UPPH"] = upph
         st.session_state.results["FATP"]["Cost"] = cost
         st.session_state["fatp_calculated"] = True
+
     if st.session_state.get("fatp_calculated"):
         upph = st.session_state.results["FATP"]["UPPH"]
         cost = st.session_state.results["FATP"]["Cost"]
         st.success(f"UPPH: {upph:,.2f} | DL Should Cost: ${cost:,.4f}")
+
 with col2:
     st.header("CSD Mainline")
-    csd_uph = st.number_input("UPH (CSD)", key="csd_uph", min_value=0.0, step=1.0, format="%.2f")
-    csd_dl = st.number_input("DL HC (CSD)", key="csd_dl", min_value=0, step=1)
-    csd_util_pct = st.number_input("Utilization (%) (CSD)", min_value=1, max_value=100, value=85, step=1, format="%d")
+
+    csd_uph = st.number_input("UPH (CSD)", key="csd_uph", min_value=0.0, step=1.0,
+                              value=csd_defaults["uph"], format="%.2f")
+    csd_dl = st.number_input("DL HC (CSD)", key="csd_dl", min_value=0, step=1,
+                             value=csd_defaults["dl"])
+    csd_util_pct = st.number_input("Utilization (%) (CSD)", min_value=1, max_value=100,
+                                   value=csd_defaults["util_pct"], step=1, format="%d")
     csd_util = csd_util_pct / 100.0
     st.session_state.csd_util = csd_util
-    csd_wage = st.number_input("Hourly Wage ($) (CSD)", key="csd_wage", min_value=0.0, step=1.0, format="%.2f")
+
+    csd_wage = st.number_input("Hourly Wage ($) (CSD)", key="csd_wage", min_value=0.0, step=1.0,
+                               value=csd_defaults["wage"], format="%.2f")
+
     if st.button("Calculate CSD Mainline"):
         upph = csd_uph / csd_dl if csd_dl > 0 else 0
         cost = csd_wage / csd_util / upph if upph > 0 else 0
-
         st.session_state.results["CSD"]["UPPH"] = upph
         st.session_state.results["CSD"]["Cost"] = cost
         st.session_state["csd_calculated"] = True
